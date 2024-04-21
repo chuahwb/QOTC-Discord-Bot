@@ -1,2 +1,2 @@
-# Handles data storage for the bot
-trade_data = {'buy': {}, 'sell': {}}
+# Initialize the trade data dictionary with guild IDs as keys.
+trade_data = {}

@@ -1,7 +1,7 @@
 import re
 
 
-def update_trade_data(trade_data, action, quantity, price):
+def update_trade_data(guild_id, trade_data, action, quantity, price):
     """
     Updates the trading data dictionary based on the action, quantity, and price provided.
 
@@ -11,12 +11,14 @@ def update_trade_data(trade_data, action, quantity, price):
         quantity (int): The amount of the item being traded.
         price (float): The price per item in the trade.
     """
+    if guild_id not in trade_data:
+        trade_data[guild_id] = {'buy': {}, 'sell': {}}
     key = 'sell' if action.lower() == 'wts' else 'buy'
-    if price not in trade_data[key]:
-        trade_data[key][price] = 0
-    trade_data[key][price] += quantity
+    if price not in trade_data[guild_id][key]:
+        trade_data[guild_id][key][price] = 0
+    trade_data[guild_id][key][price] += quantity
     print(
-        f"Updated trade data after {action} operation: \nBuy data: {trade_data['buy']}, \nSell data: {trade_data['sell']}")
+        f"Updated {guild_id} trade data after {action}: Buy data - {trade_data[guild_id]['buy']}, Sell data - {trade_data[guild_id]['sell']}")
 
 
 def parse_quantity(qty_str, unit):
@@ -67,6 +69,7 @@ def process_message(message):
 
     if message.author != message.author.bot:  # Check that the message is not from the bot itself
         # Skip command messages when scanned is True
+        guild_id = str(message.guild.id)
         content = message.content
         match = message_pattern.search(content)
         if match:
@@ -76,6 +79,7 @@ def process_message(message):
             price = float(match.group(4))
             if price != 0.0:
                 quantity = parse_quantity(quantity_string, unit)
-                update_trade_data(trade_data, action, quantity, price)
+                update_trade_data(guild_id, trade_data,
+                                  action, quantity, price)
                 print(
                     f"Action: {action}, Quantity: {quantity}, Price: {price}")

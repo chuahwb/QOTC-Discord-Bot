@@ -24,7 +24,10 @@ def setup_bot():
         from .state_manager import bot_state
 
         # Custom processing logic
-        if bot_state.first_scan and not message.content.startswith('/'):
+        guild_id = str(message.guild.id)
+        if bot_state.first_scan.get(guild_id) == None:
+            bot_state.failed_scanning(guild_id=guild_id)
+        if bot_state.first_scan[guild_id] and not message.content.startswith('/'):
             process_message(message)
 
         # Process commands regardless of the scanned status

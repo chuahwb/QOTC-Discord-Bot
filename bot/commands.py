@@ -15,9 +15,13 @@ def setup_commands(bot: commands.Bot):
         """
         Scans the channel's message history based on the specified period or count to capture trade data.
         """
-        await ctx.respond("Trade data has been reset. Starting new scan.")
-        trade_data['buy'].clear()
-        trade_data['sell'].clear()
+        guild_id = str(ctx.guild.id)
+        if guild_id not in trade_data:
+            trade_data[guild_id] = {'buy': {}, 'sell': {}}
+        else:
+            trade_data[guild_id]['buy'].clear()
+            trade_data[guild_id]['sell'].clear()
+        await ctx.respond(f"Trade data for {ctx.guild.name} has been reset. Starting new scan.")
 
         # Save original permissions
         everyone_role = ctx.guild.default_role
@@ -29,7 +33,7 @@ def setup_commands(bot: commands.Bot):
         await ctx.channel.set_permissions(everyone_role, overwrite=overwrite)
 
         # Enable message processing
-        bot_state.start_scanning()
+        bot_state.start_scanning(guild_id=guild_id)
         messages_scanned = 0
 
         try:
@@ -48,8 +52,8 @@ def setup_commands(bot: commands.Bot):
                 bot_state.failed_scanning()
                 return
         finally:
-            bot_state.scanned()
-            bot_state.stop_scanning()
+            bot_state.scanned(guild_id=guild_id)
+            bot_state.stop_scanning(guild_id=guild_id)
 
             # Restore original permissions after scanning
             await ctx.channel.set_permissions(everyone_role, overwrite=original_overwrites)
@@ -60,23 +64,29 @@ def setup_commands(bot: commands.Bot):
         """
         Resets the internal storage of trade data.
         """
-        trade_data['buy'].clear()
-        trade_data['sell'].clear()
-        bot_state.not_scanned()
-        await ctx.respond("Trade data has been reset.")
+        guild_id = str(ctx.guild.id)
+        if guild_id in trade_data:
+            trade_data[guild_id]['buy'].clear()
+            trade_data[guild_id]['sell'].clear()
+        bot_state.not_scanned(guild_id=guild_id)
+        await ctx.respond(f"Trade data for {ctx.guild.name} has been reset.")
 
     @bot.slash_command(description="Generates and sends distribution histograms for buy and sell orders.")
     async def qotc_dist(ctx):
         """
         Sends the distribution charts for buy and sell orders.
         """
-        buy_plot = plot_data(
-            trade_data['buy'], 'Distribution of Buy Orders', 'green')
-        sell_plot = plot_data(
-            trade_data['sell'], 'Distribution of Sell Orders', 'red')
-        if buy_plot and sell_plot:
-            await ctx.respond("Generating Buy & Sell Orders Histogram")
-            await ctx.send("Buy Order Distribution:", file=discord.File(buy_plot, 'buy_histogram.png'))
-            await ctx.send("Sell Order Distribution:", file=discord.File(sell_plot, 'sell_histogram.png'))
+        guild_id = str(ctx.guild.id)
+        if guild_id in trade_data and trade_data[guild_id]:
+            buy_plot = plot_data(
+                trade_data[guild_id]['buy'], 'Distribution of Buy Orders', 'green')
+            sell_plot = plot_data(
+                trade_data[guild_id]['sell'], 'Distribution of Sell Orders', 'red')
+            if buy_plot and sell_plot:
+                await ctx.respond("Generating Buy & Sell Orders Histogram")
+                await ctx.send("Buy Order Distribution:", file=discord.File(buy_plot, 'buy_histogram.png'))
+                await ctx.send("Sell Order Distribution:", file=discord.File(sell_plot, 'sell_histogram.png'))
+            else:
+                await ctx.respond("No sufficient data to generate histograms.")
         else:
-            await ctx.respond("No sufficient data to generate histograms.")
+            await ctx.respond("No trading data available for this server.")
