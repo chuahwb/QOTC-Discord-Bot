@@ -8,7 +8,7 @@ Follow these steps to set up the QOTC Bot in your local environment:
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/yourusername/qotc-bot.git
+   git clone https://github.com/chuahwb/QOTC-Discord-Bot.git
    cd qotc-bot
    ```
 
